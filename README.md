@@ -1,14 +1,10 @@
 # CryptoScanner
 
-CryptoScanner is a project designed to scan and analyze cryptocurrency market data. This tool aims to provide insights and analytics to help users make informed trading decisions.
+CryptoScanner is a btc private key scanner
 
 ## Features
 
-- Real-time price tracking
-- Market trend analysis
-- Alert notifications
-- Historical data visualization
-- Customizable scanning criteria
+- Scanner
 
 ## Installation
 
