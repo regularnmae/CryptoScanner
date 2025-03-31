@@ -1,10 +1,11 @@
 import os
-import re
+import time
 import requests
+import logging
+import re
 from bitcoinlib.keys import Key
 from binascii import unhexlify
-import time
-import logging
+
 
 # Set up logging
 logging.basicConfig(
@@ -16,10 +17,13 @@ logging.basicConfig(
     ]
 )
 
-# File extensions to exclude
-EXCLUDED_EXTENSIONS = {".exe", ".dll", ".bin", ".iso"}  # Add more if needed
+# Configurable parameters
+MAX_RETRIES = 5  # Maximum number of retries for API requests
+RETRY_DELAY = 5  # Initial delay before retrying (in seconds)
+MAX_RETRY_DELAY = 60  # Maximum delay between retries (in seconds)
+EXCLUDED_EXTENSIONS = {".exe", ".dll", ".bin", ".iso"}  # File extensions to skip
 
-# Regular expressions for different Bitcoin private key formats, refined for less false positives
+# Regular expressions for different Bitcoin private key formats
 PATTERNS = {
     "Raw Hex (64 characters)": re.compile(r'[\s\n][0-9a-fA-F]{64}[\s\n]'),
     "WIF (51/52 chars, starts with 5, K, or L)": re.compile(r'[\s\n][5KL][1-9A-HJ-NP-Za-km-z]{50,51}[\s\n]'),
@@ -27,79 +31,65 @@ PATTERNS = {
     "BIP38 Encrypted Key (starts with 6P, 58 chars)": re.compile(r'[\s\n]6P[1-9A-HJ-NP-Za-km-z]{56}[\s\n]')
 }
 
-# Blockchair API URL to check balance
-BLOCKCHAIR_API_URL = "https://api.blockchair.com/bitcoin/dashboards/address/"
+def get_balance_blockchain(address):
+    """Check Bitcoin balance using Blockchain.com API with rate limiting."""
+    url = f"https://blockchain.info/rawaddr/{address}"
 
-# Configure the delay between requests to avoid rate limits (can be adjusted)
-REQUEST_DELAY = 3
+    retries = 0
+    while retries < MAX_RETRIES:
+        try:
+            response = requests.get(url, timeout=10)
 
-# Set to store addresses already checked
-checked_addresses = set()
-
-#test
-def get_balance(address, retries=3, backoff_time=30):
-    """Check the balance of a Bitcoin address using Blockchair API."""
-    if address in checked_addresses:
-        return 0  # Skip if already checked
-
-    logging.info(f"Checking balance for Bitcoin address: {address}")
-    try:
-        response = requests.get(f"{BLOCKCHAIR_API_URL}{address}", timeout=10)  # Set timeout for request
-        if response.status_code == 429:  # Rate limit exceeded
-            if retries > 0:
-                logging.warning(f"Rate limit exceeded. Retrying after {backoff_time} seconds...")
-                time.sleep(backoff_time)
-                return get_balance(address, retries - 1, backoff_time * 2)  # Increase backoff time
-            else:
-                logging.error("Maximum retries reached. Skipping address.")
-                return 0
-
-        data = response.json()
-        if "data" in data and address in data["data"]:
-            balance = data["data"][address]["address"]["balance"]
-            if balance > 0:
-                logging.info(f"Found BTC!!! Bitcoin address: {address} balance: {balance}")
+            if response.status_code == 200:
+                result = response.json()
+                balance = result.get("final_balance", 0)
+                logging.info(f"Bitcoin address {address} balance: {balance} satoshis")
                 return balance
-        return 0
-    except requests.exceptions.Timeout as e:
-        logging.warning(f"Timeout error for {address}: {e}")
-        if retries > 0:
-            logging.info(f"Retrying after {backoff_time} seconds...")
-            time.sleep(backoff_time)
-            return get_balance(address, retries - 1, backoff_time * 2)  # Increase backoff time
-        else:
-            logging.error(f"Timeout error: Maximum retries reached. Skipping address.")
-            return 0
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Error checking balance for {address}: {e}")
-        return -1
-    finally:
-        checked_addresses.add(address)  # Add address to the set of checked addresses
-        time.sleep(REQUEST_DELAY)  # Adding delay to avoid rate limit issues
+            elif response.status_code == 429:
+                # If rate-limited, apply exponential backoff
+                wait_time = min(RETRY_DELAY * (2 ** retries), MAX_RETRY_DELAY)
+                logging.warning(f"Rate limit exceeded. Retrying after {wait_time} seconds...")
+                time.sleep(wait_time)
+                retries += 1
+            else:
+                logging.error(f"Blockchain.com API request failed with status code {response.status_code}")
+                return -1
+
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error connecting to Blockchain.com API: {e}")
+            retries += 1
+            wait_time = min(RETRY_DELAY * (2 ** retries), MAX_RETRY_DELAY)
+            logging.warning(f"Retrying after {wait_time} seconds...")
+            time.sleep(wait_time)
+
+    logging.error(f"Max retries reached. Could not fetch balance for address {address}")
+    return -1
 
 def private_key_to_address(private_key):
     """Convert a private key to a Bitcoin address."""
     try:
         if private_key.startswith("5") or private_key.startswith("K") or private_key.startswith("L"):
-            # WIF format, use the correct method for WIF private keys
+            # WIF format
             key = Key.from_wif(private_key)
         elif len(private_key) == 64 and all(c in "0123456789abcdefABCDEF" for c in private_key):
-            # Raw hex format (64 characters), convert hex to bytes
+            # Raw hex format (64 characters)
             key_bytes = unhexlify(private_key)
-            key = Key(key_bytes)  # Directly use the Key constructor with the byte data
+            key = Key(key_bytes)
         else:
-            # Invalid private key format
+            logging.error(f"Invalid private key format: {private_key}")
             return None
 
-        address = key.address()
-        return address
+        return key.address()
     except Exception as e:
         logging.error(f"Error converting private key to address: {e}")
         return None
 
-
 def scan_file(file_path):
     """Scans a file for Bitcoin private keys."""
+    if not os.path.exists(file_path):
+        logging.error(f"File does not exist: {file_path}")
+        return
+
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             # Read file in chunks for better memory management
@@ -109,20 +99,19 @@ def scan_file(file_path):
                     if matches:
                         for match in matches:
                             match_cleaned = match.strip()
-
-                            # Convert private key to address and check balance
                             address = private_key_to_address(match_cleaned)
                             if address:
-                                balance = get_balance(address)
+                                balance = get_balance_blockchain(address)
                                 if balance > 0:
                                     logging.info(f"    -> Address {address} has a balance: {balance} satoshis")
                                 else:
                                     logging.info(f"    -> Address {address} has no balance.")
+                            else:
+                                logging.debug(f"Invalid private key found: {match_cleaned}")
     except (FileNotFoundError, PermissionError) as e:
         logging.error(f"Error opening file {file_path}: {e}")
     except Exception as e:
         logging.error(f"Error reading file {file_path}: {e}")
-
 
 def scan_directory(directory):
     """Recursively scans all files in a directory, skipping specific file types."""
@@ -132,7 +121,6 @@ def scan_directory(directory):
                 continue  # Skip excluded file types
 
             scan_file(os.path.join(root, file))
-
 
 # Set the target directory to scan
 TARGET_DIR = "C:/"
