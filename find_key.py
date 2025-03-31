@@ -36,6 +36,7 @@ REQUEST_DELAY = 3
 # Set to store addresses already checked
 checked_addresses = set()
 
+#test
 def get_balance(address, retries=3, backoff_time=30):
     """Check the balance of a Bitcoin address using Blockchair API."""
     if address in checked_addresses:
