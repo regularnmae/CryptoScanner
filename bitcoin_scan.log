@@ -1,0 +1,85 @@
+2025-03-31 14:45:44,163 - INFO - Scanning directory: C:/...
+
+2025-03-31 14:45:44,163 - ERROR - Error opening file C:/DumpStack.log: [Errno 13] Permission denied: 'C:/DumpStack.log'
+2025-03-31 14:45:44,163 - ERROR - Error opening file C:/DumpStack.log.tmp: [Errno 13] Permission denied: 'C:/DumpStack.log.tmp'
+2025-03-31 14:45:44,164 - ERROR - Error opening file C:/pagefile.sys: [Errno 13] Permission denied: 'C:/pagefile.sys'
+2025-03-31 14:45:44,164 - ERROR - Error opening file C:/swapfile.sys: [Errno 13] Permission denied: 'C:/swapfile.sys'
+2025-03-31 14:45:49,549 - INFO - Checking balance for Bitcoin address: 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o
+2025-03-31 14:46:10,685 - ERROR - Error checking balance for 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x00000153C282E900>, 'Connection to api.blockchair.com timed out. (connect timeout=None)'))
+2025-03-31 14:46:10,685 - INFO -     -> Address 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o has no balance.
+2025-03-31 14:46:10,692 - INFO - Checking balance for Bitcoin address: 1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC
+2025-03-31 14:46:31,728 - ERROR - Error checking balance for 1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x00000153C28E5450>, 'Connection to api.blockchair.com timed out. (connect timeout=None)'))
+2025-03-31 14:46:31,728 - INFO -     -> Address 1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC has no balance.
+2025-03-31 14:46:31,735 - INFO - Checking balance for Bitcoin address: 1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL
+2025-03-31 14:46:52,773 - ERROR - Error checking balance for 1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x00000153C28E5D10>, 'Connection to api.blockchair.com timed out. (connect timeout=None)'))
+2025-03-31 14:46:52,773 - INFO -     -> Address 1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL has no balance.
+2025-03-31 14:46:52,780 - INFO - Checking balance for Bitcoin address: 19bDbsjSozgARp3XVUdSqxhFideYW7fZU1
+2025-03-31 14:53:16,443 - INFO - Scanning directory: C:/...
+
+2025-03-31 14:53:16,443 - ERROR - Error opening file C:/DumpStack.log: [Errno 13] Permission denied: 'C:/DumpStack.log'
+2025-03-31 14:53:16,444 - ERROR - Error opening file C:/DumpStack.log.tmp: [Errno 13] Permission denied: 'C:/DumpStack.log.tmp'
+2025-03-31 14:53:16,444 - ERROR - Error opening file C:/pagefile.sys: [Errno 13] Permission denied: 'C:/pagefile.sys'
+2025-03-31 14:53:16,444 - ERROR - Error opening file C:/swapfile.sys: [Errno 13] Permission denied: 'C:/swapfile.sys'
+2025-03-31 14:53:21,857 - INFO - Checking balance for Bitcoin address: 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o
+2025-03-31 14:53:42,976 - ERROR - Error checking balance for 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x0000027C6D56A900>, 'Connection to api.blockchair.com timed out. (connect timeout=None)'))
+2025-03-31 14:53:42,976 - INFO -     -> Address 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o has no balance.
+2025-03-31 14:53:42,984 - INFO - Checking balance for Bitcoin address: 1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC
+2025-03-31 14:54:04,021 - ERROR - Error checking balance for 1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x0000027C6D625450>, 'Connection to api.blockchair.com timed out. (connect timeout=None)'))
+2025-03-31 14:54:04,021 - INFO -     -> Address 1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC has no balance.
+2025-03-31 14:54:04,029 - INFO - Checking balance for Bitcoin address: 1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL
+2025-03-31 14:54:25,060 - ERROR - Error checking balance for 1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x0000027C6D625D10>, 'Connection to api.blockchair.com timed out. (connect timeout=None)'))
+2025-03-31 14:54:25,061 - INFO -     -> Address 1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL has no balance.
+2025-03-31 14:54:25,087 - INFO - Checking balance for Bitcoin address: 19bDbsjSozgARp3XVUdSqxhFideYW7fZU1
+2025-03-31 14:54:46,760 - INFO - Scanning directory: C:/...
+
+2025-03-31 14:54:46,761 - ERROR - Error opening file C:/DumpStack.log: [Errno 13] Permission denied: 'C:/DumpStack.log'
+2025-03-31 14:54:46,761 - ERROR - Error opening file C:/DumpStack.log.tmp: [Errno 13] Permission denied: 'C:/DumpStack.log.tmp'
+2025-03-31 14:54:46,761 - ERROR - Error opening file C:/pagefile.sys: [Errno 13] Permission denied: 'C:/pagefile.sys'
+2025-03-31 14:54:46,761 - ERROR - Error opening file C:/swapfile.sys: [Errno 13] Permission denied: 'C:/swapfile.sys'
+2025-03-31 14:54:52,241 - INFO - Checking balance for Bitcoin address: 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o
+2025-03-31 14:55:13,262 - ERROR - Error checking balance for 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x00000239F4E3E900>, 'Connection to api.blockchair.com timed out. (connect timeout=None)'))
+2025-03-31 14:55:13,262 - INFO -     -> Address 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o has no balance.
+2025-03-31 14:55:13,269 - INFO - Checking balance for Bitcoin address: 1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC
+2025-03-31 14:55:34,306 - ERROR - Error checking balance for 1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x00000239F4EF5450>, 'Connection to api.blockchair.com timed out. (connect timeout=None)'))
+2025-03-31 14:55:34,307 - INFO -     -> Address 1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC has no balance.
+2025-03-31 14:55:34,316 - INFO - Checking balance for Bitcoin address: 1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL
+2025-03-31 14:55:55,398 - ERROR - Error checking balance for 1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x00000239F4EF5D10>, 'Connection to api.blockchair.com timed out. (connect timeout=None)'))
+2025-03-31 14:55:55,398 - INFO -     -> Address 1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL has no balance.
+2025-03-31 14:55:55,405 - INFO - Checking balance for Bitcoin address: 19bDbsjSozgARp3XVUdSqxhFideYW7fZU1
+2025-03-31 14:56:16,461 - ERROR - Error checking balance for 19bDbsjSozgARp3XVUdSqxhFideYW7fZU1: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/19bDbsjSozgARp3XVUdSqxhFideYW7fZU1 (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x00000239F4EF5F90>, 'Connection to api.blockchair.com timed out. (connect timeout=None)'))
+2025-03-31 14:56:16,461 - INFO -     -> Address 19bDbsjSozgARp3XVUdSqxhFideYW7fZU1 has no balance.
+2025-03-31 14:56:16,462 - ERROR - Error converting private key to address: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+2025-03-31 14:56:16,462 - ERROR - Error converting private key to address: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+2025-03-31 14:56:16,463 - ERROR - Error converting private key to address: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+2025-03-31 14:56:16,463 - ERROR - Error converting private key to address: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+2025-03-31 14:56:16,471 - INFO -     -> Address 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o has no balance.
+2025-03-31 14:56:16,477 - INFO -     -> Address 1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC has no balance.
+2025-03-31 14:56:16,484 - INFO -     -> Address 1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL has no balance.
+2025-03-31 14:56:16,491 - INFO -     -> Address 19bDbsjSozgARp3XVUdSqxhFideYW7fZU1 has no balance.
+2025-03-31 14:56:16,497 - INFO - Checking balance for Bitcoin address: 18N1mVsk3Vwth6qdKxUF9tsfkytNFWCWHM
+2025-03-31 14:56:36,048 - INFO - Scanning directory: C:/...
+
+2025-03-31 14:56:36,048 - ERROR - Error opening file C:/DumpStack.log: [Errno 13] Permission denied: 'C:/DumpStack.log'
+2025-03-31 14:56:36,048 - ERROR - Error opening file C:/DumpStack.log.tmp: [Errno 13] Permission denied: 'C:/DumpStack.log.tmp'
+2025-03-31 14:56:36,049 - ERROR - Error opening file C:/pagefile.sys: [Errno 13] Permission denied: 'C:/pagefile.sys'
+2025-03-31 14:56:36,049 - ERROR - Error opening file C:/swapfile.sys: [Errno 13] Permission denied: 'C:/swapfile.sys'
+2025-03-31 14:56:41,450 - INFO - Checking balance for Bitcoin address: 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o
+2025-03-31 14:57:02,590 - ERROR - Error checking balance for 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x00000214218DE900>, 'Connection to api.blockchair.com timed out. (connect timeout=None)'))
+2025-03-31 14:57:02,591 - INFO -     -> Address 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o has no balance.
+2025-03-31 14:57:02,611 - INFO - Checking balance for Bitcoin address: 1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC
+2025-03-31 14:57:23,661 - ERROR - Error checking balance for 1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x0000021421995450>, 'Connection to api.blockchair.com timed out. (connect timeout=None)'))
+2025-03-31 14:57:23,661 - INFO -     -> Address 1ALueB7WBLnqh8MF2JmbHwE7XsPPHeyhBC has no balance.
+2025-03-31 14:57:23,671 - INFO - Checking balance for Bitcoin address: 1JeQMrRQroJVLComp2m7U7xpu6t9A5t4JL
+2025-03-31 14:59:37,683 - INFO - Scanning directory: C:/...
+
+2025-03-31 14:59:37,683 - ERROR - Error opening file C:/DumpStack.log: [Errno 13] Permission denied: 'C:/DumpStack.log'
+2025-03-31 14:59:37,683 - ERROR - Error opening file C:/DumpStack.log.tmp: [Errno 13] Permission denied: 'C:/DumpStack.log.tmp'
+2025-03-31 14:59:37,683 - ERROR - Error opening file C:/pagefile.sys: [Errno 13] Permission denied: 'C:/pagefile.sys'
+2025-03-31 14:59:37,683 - ERROR - Error opening file C:/swapfile.sys: [Errno 13] Permission denied: 'C:/swapfile.sys'
+2025-03-31 14:59:43,107 - INFO - Checking balance for Bitcoin address: 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o
+2025-03-31 14:59:53,202 - WARNING - Timeout error for 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D865CB2900>, 'Connection to api.blockchair.com timed out. (connect timeout=10)'))
+2025-03-31 14:59:53,202 - INFO - Retrying after 30 seconds...
+2025-03-31 15:00:23,203 - INFO - Checking balance for Bitcoin address: 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o
+2025-03-31 15:00:33,215 - WARNING - Timeout error for 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o: HTTPSConnectionPool(host='api.blockchair.com', port=443): Max retries exceeded with url: /bitcoin/dashboards/address/1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001D865D65310>, 'Connection to api.blockchair.com timed out. (connect timeout=10)'))
+2025-03-31 15:00:33,216 - INFO - Retrying after 60 seconds...
+2025-03-31 15:01:33,217 - INFO - Checking balance for Bitcoin address: 1L3dkU3xeLjoBnpJ61GkzvfhWtmFQZYZ4o
