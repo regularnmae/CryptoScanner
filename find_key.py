@@ -3,14 +3,15 @@ import time
 import requests
 import logging
 import re
-from bitcoinlib.keys import Key
 import json
 import random
 import asyncio
+from bitcoinlib.keys import Key
+from bitcoinlib.wallets import Wallet
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
@@ -25,38 +26,42 @@ MAX_RETRY_DELAY = 60
 EXCLUDED_EXTENSIONS = {".exe", ".dll", ".bin", ".iso"}
 session = requests.Session()
 
-# Regular expression patterns for Bitcoin keys
+# Regular expression patterns for Bitcoin keys & addresses
 PATTERNS = {
-    "WIF (51/52 chars, starts with 5, K, or L)": re.compile(r'(^|\s|\n)([5KL][1-9A-HJ-NP-Za-km-z]{50,51})(\s|\n|$)')
+    "WIF (51/52 chars, starts with 5, K, or L)": re.compile(r'\b([5KL][1-9A-HJ-NP-Za-km-z]{50,51})\b'),
+    "Legacy Address (P2PKH)": re.compile(r'\b(1[a-km-zA-HJ-NP-Z1-9]{25,34})\b'),
+    "SegWit Address (P2SH)": re.compile(r'\b(3[a-km-zA-HJ-NP-Z1-9]{25,34})\b'),
+    "Bech32 Address (P2WPKH/P2WSH)": re.compile(r'\b(bc1[a-zA-HJ-NP-Z0-9]{25,62})\b')
 }
 
-# Set to store already processed addresses
+# File to store processed addresses, private keys, and balances
 PROCESSED_FILE = "processed_addresses.json"
 sem = asyncio.Semaphore(100)  # Limit concurrent scans
+SAVE_INTERVAL = 100  # Save progress every 100 addresses
 
 def load_processed_addresses():
-    """Load already processed addresses from JSON."""
+    """Load already processed addresses with private keys and balances."""
     try:
         with open(PROCESSED_FILE, 'r') as f:
-            return set(json.load(f))
+            return json.load(f)  # Should be a dict {address: {"private_key": key, "balance": balance}}
     except (FileNotFoundError, json.JSONDecodeError):
-        return set()
+        return {}
 
 def save_processed_addresses():
-    """Save processed addresses to JSON."""
+    """Save processed addresses with private keys and balances to JSON."""
     with open(PROCESSED_FILE, 'w') as f:
-        json.dump(list(processed_addresses), f)
+        json.dump(processed_addresses, f, indent=4)
 
 processed_addresses = load_processed_addresses()
 
 async def read_file_async(file_path):
-    """Asynchronously read a file for scanning."""
+    """Asynchronously read a file for scanning in chunks."""
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            return await asyncio.to_thread(f.read)
+            while chunk := await asyncio.to_thread(f.read, 4096):  # Read in 4KB chunks
+                yield chunk
     except (FileNotFoundError, PermissionError) as e:
         logging.debug(f"Error opening file {file_path}: {e}")
-        return None
 
 def retry_request(url, retries=0):
     """Handles retry logic with exponential backoff + jitter."""
@@ -64,7 +69,7 @@ def retry_request(url, retries=0):
         response = session.get(url, timeout=10)
         if response.status_code == 200:
             return response.json()
-        elif response.status_code == 429:  # Rate limit exceeded
+        elif response.status_code == 429:
             wait_time = min(RETRY_DELAY * (2 ** retries) + random.uniform(0, 3), MAX_RETRY_DELAY)
             logging.warning(f"Rate limit exceeded. Retrying after {wait_time:.2f} seconds...")
             time.sleep(wait_time)
@@ -77,40 +82,64 @@ def retry_request(url, retries=0):
         return None
 
 def get_balance_btc_explorer(address):
-    """Check Bitcoin balance using local Bitcoin Explorer API."""
-    url = f"https://btc-explorer.privatedns.org/api/address/{address}"
+    """Check Bitcoin balance using BTC-RPC-Explorer API."""
+    API_BASE_URL = "https://btc-explorer.privatedns.org/api"  # Replace with your actual BTC-RPC-Explorer URL
+    url = f"{API_BASE_URL}/address/{address}"
+
     result = retry_request(url)
-    if result:
-        balance = result.get("balance", 0)
-        logging.info(f"Bitcoin address {address} balance: {balance} satoshis")
-        return balance
-    return -1
+    if not result:
+        logging.error(f"Failed to fetch balance for {address}")
+        return -1  # Indicate failure
+
+    balance_satoshis = result.get("txHistory", {}).get("balanceSat", -1)
+    balance_btc = balance_satoshis / 1e8  # Convert satoshis to BTC
+    logging.info(f"Bitcoin address {address} balance: {balance_btc} BTC ({balance_satoshis} satoshis)")
+    return balance_btc
+
+def bip32_private_key_to_address(xprv):
+    """Convert a BIP-32 xprv to a Bitcoin address."""
+    try:
+        wallet = Wallet.create("temp_wallet", keys=xprv, network='bitcoin')
+        return wallet.get_key().address
+    except Exception as e:
+        logging.error(f"Error converting xprv to address: {e}")
+        return None
 
 def private_key_to_address(private_key):
-    """Convert a private key to a Bitcoin address."""
+    """Convert a private key (WIF or extended) to a Bitcoin address."""
     try:
-        if private_key.startswith(("5", "K", "L")):
-            key = Key.from_wif(private_key)
+        if private_key.startswith(("5", "K", "L")):  # WIF format
+            key = Key(private_key)
             return key.address()
+        elif private_key.startswith(("xprv", "yprv", "zprv")):  # BIP32/44
+            return bip32_private_key_to_address(private_key)
     except Exception as e:
-        logging.debug(f"Error converting private key to address: {e}")
+        logging.error(f"Error converting private key to address: {e}")
     return None
 
 async def scan_file(file_path):
     """Scan a file asynchronously with concurrency limit."""
     async with sem:
-        chunk = await read_file_async(file_path)
-        if chunk is None:
-            return
-        for key_type, pattern in PATTERNS.items():
-            matches = pattern.findall(chunk)
-            for match in matches:
-                match_cleaned = match[1].strip()
-                address = private_key_to_address(match_cleaned)
-                if address and address not in processed_addresses:
-                    processed_addresses.add(address)
-                    balance = get_balance_btc_explorer(address)
-                    logging.info(f"Bitcoin address {address} balance: {balance} satoshis")
+        async for chunk in read_file_async(file_path):
+            for key_type, pattern in PATTERNS.items():
+                matches = pattern.findall(chunk)
+                for match in matches:
+                    match_cleaned = match.strip()
+                    address = private_key_to_address(match_cleaned)
+
+                    # Process the address if it hasn't been processed already
+                    if address and address not in processed_addresses:
+                        balance = get_balance_btc_explorer(address)
+                        processed_addresses[address] = {
+                            "private_key": match_cleaned,  # Store the private key
+                            "balance": balance  # Store the balance
+                        }
+
+                        if balance > 0:
+                            logging.info(f"Bitcoin address {address} has {balance} BTC!")
+
+                        if len(processed_addresses) % SAVE_INTERVAL == 0:
+                            save_processed_addresses()
 
 async def scan_directory(directory):
     """Recursively scan files asynchronously with a concurrency limit."""
@@ -122,11 +151,18 @@ async def scan_directory(directory):
                 tasks.append(scan_file(file_path))
     await asyncio.gather(*tasks)
 
-# Set the target directory to scan
-TARGET_DIR = input("Enter the directory to scan (e.g., C:/Users/YourName/Documents): ").strip()
+# Ask the user for a directory path
+TARGET_DIR = input("Enter the directory to scan (press Enter for current directory): ").strip()
+
+# Default to the current directory if no input is given
+if not TARGET_DIR:
+    TARGET_DIR = os.getcwd()
+
+# Validate the path
 if not os.path.exists(TARGET_DIR):
     logging.error("Invalid directory. Exiting.")
     exit(1)
+
 
 if __name__ == "__main__":
     logging.info(f"Scanning directory: {TARGET_DIR}...\n")
