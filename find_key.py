@@ -4,128 +4,132 @@ import requests
 import logging
 import re
 from bitcoinlib.keys import Key
-from binascii import unhexlify
-
+import json
+import random
+import asyncio
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,  # Log level (INFO, DEBUG, ERROR, etc.)
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.StreamHandler(),  # Print logs to console
-        logging.FileHandler("bitcoin_scan.log")  # Also log to a file
+        logging.StreamHandler(),
+        logging.FileHandler("bitcoin_scan.log")
     ]
 )
 
 # Configurable parameters
-MAX_RETRIES = 5  # Maximum number of retries for API requests
-RETRY_DELAY = 5  # Initial delay before retrying (in seconds)
-MAX_RETRY_DELAY = 60  # Maximum delay between retries (in seconds)
-EXCLUDED_EXTENSIONS = {".exe", ".dll", ".bin", ".iso"}  # File extensions to skip
+MAX_RETRIES = 5
+RETRY_DELAY = 5
+MAX_RETRY_DELAY = 60
+EXCLUDED_EXTENSIONS = {".exe", ".dll", ".bin", ".iso"}
+session = requests.Session()
 
-# Regular expressions for different Bitcoin private key formats
+# Regular expression patterns for Bitcoin keys
 PATTERNS = {
-    "Raw Hex (64 characters)": re.compile(r'[\s\n][0-9a-fA-F]{64}[\s\n]'),
-    "WIF (51/52 chars, starts with 5, K, or L)": re.compile(r'[\s\n][5KL][1-9A-HJ-NP-Za-km-z]{50,51}[\s\n]'),
-    "Mini Private Key (starts with S, 22-30 chars)": re.compile(r'[\s\n]S[1-9A-HJ-NP-Za-km-z]{21,29}[\s\n]'),
-    "BIP38 Encrypted Key (starts with 6P, 58 chars)": re.compile(r'[\s\n]6P[1-9A-HJ-NP-Za-km-z]{56}[\s\n]')
+    "WIF (51/52 chars, starts with 5, K, or L)": re.compile(r'(^|\s|\n)([5KL][1-9A-HJ-NP-Za-km-z]{50,51})(\s|\n|$)')
 }
 
-def get_balance_blockchain(address):
-    """Check Bitcoin balance using Blockchain.com API with rate limiting."""
-    url = f"https://blockchain.info/rawaddr/{address}"
+# Set to store already processed addresses
+PROCESSED_FILE = "processed_addresses.json"
+sem = asyncio.Semaphore(100)  # Limit concurrent scans
 
-    retries = 0
-    while retries < MAX_RETRIES:
-        try:
-            response = requests.get(url, timeout=10)
+def load_processed_addresses():
+    """Load already processed addresses from JSON."""
+    try:
+        with open(PROCESSED_FILE, 'r') as f:
+            return set(json.load(f))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return set()
 
-            if response.status_code == 200:
-                result = response.json()
-                balance = result.get("final_balance", 0)
-                logging.info(f"Bitcoin address {address} balance: {balance} satoshis")
-                return balance
-            elif response.status_code == 429:
-                # If rate-limited, apply exponential backoff
-                wait_time = min(RETRY_DELAY * (2 ** retries), MAX_RETRY_DELAY)
-                logging.warning(f"Rate limit exceeded. Retrying after {wait_time} seconds...")
-                time.sleep(wait_time)
-                retries += 1
-            else:
-                logging.error(f"Blockchain.com API request failed with status code {response.status_code}")
-                return -1
+def save_processed_addresses():
+    """Save processed addresses to JSON."""
+    with open(PROCESSED_FILE, 'w') as f:
+        json.dump(list(processed_addresses), f)
 
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Error connecting to Blockchain.com API: {e}")
-            retries += 1
-            wait_time = min(RETRY_DELAY * (2 ** retries), MAX_RETRY_DELAY)
-            logging.warning(f"Retrying after {wait_time} seconds...")
+processed_addresses = load_processed_addresses()
+
+async def read_file_async(file_path):
+    """Asynchronously read a file for scanning."""
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            return await asyncio.to_thread(f.read)
+    except (FileNotFoundError, PermissionError) as e:
+        logging.debug(f"Error opening file {file_path}: {e}")
+        return None
+
+def retry_request(url, retries=0):
+    """Handles retry logic with exponential backoff + jitter."""
+    try:
+        response = session.get(url, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 429:  # Rate limit exceeded
+            wait_time = min(RETRY_DELAY * (2 ** retries) + random.uniform(0, 3), MAX_RETRY_DELAY)
+            logging.warning(f"Rate limit exceeded. Retrying after {wait_time:.2f} seconds...")
             time.sleep(wait_time)
+            return retry_request(url, retries + 1)
+        else:
+            logging.error(f"Request failed with status code {response.status_code}")
+            return None
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error making request: {e}")
+        return None
 
-    logging.error(f"Max retries reached. Could not fetch balance for address {address}")
+def get_balance_btc_explorer(address):
+    """Check Bitcoin balance using local Bitcoin Explorer API."""
+    url = f"https://btc-explorer.privatedns.org/api/address/{address}"
+    result = retry_request(url)
+    if result:
+        balance = result.get("balance", 0)
+        logging.info(f"Bitcoin address {address} balance: {balance} satoshis")
+        return balance
     return -1
 
 def private_key_to_address(private_key):
     """Convert a private key to a Bitcoin address."""
     try:
-        if private_key.startswith("5") or private_key.startswith("K") or private_key.startswith("L"):
-            # WIF format
+        if private_key.startswith(("5", "K", "L")):
             key = Key.from_wif(private_key)
-        elif len(private_key) == 64 and all(c in "0123456789abcdefABCDEF" for c in private_key):
-            # Raw hex format (64 characters)
-            key_bytes = unhexlify(private_key)
-            key = Key(key_bytes)
-        else:
-            logging.error(f"Invalid private key format: {private_key}")
-            return None
-
-        return key.address()
+            return key.address()
     except Exception as e:
-        logging.error(f"Error converting private key to address: {e}")
-        return None
+        logging.debug(f"Error converting private key to address: {e}")
+    return None
 
-def scan_file(file_path):
-    """Scans a file for Bitcoin private keys."""
-    if not os.path.exists(file_path):
-        logging.error(f"File does not exist: {file_path}")
-        return
+async def scan_file(file_path):
+    """Scan a file asynchronously with concurrency limit."""
+    async with sem:
+        chunk = await read_file_async(file_path)
+        if chunk is None:
+            return
+        for key_type, pattern in PATTERNS.items():
+            matches = pattern.findall(chunk)
+            for match in matches:
+                match_cleaned = match[1].strip()
+                address = private_key_to_address(match_cleaned)
+                if address and address not in processed_addresses:
+                    processed_addresses.add(address)
+                    balance = get_balance_btc_explorer(address)
+                    logging.info(f"Bitcoin address {address} balance: {balance} satoshis")
 
-    try:
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            # Read file in chunks for better memory management
-            while chunk := f.read(1024):
-                for key_type, pattern in PATTERNS.items():
-                    matches = pattern.findall(chunk)
-                    if matches:
-                        for match in matches:
-                            match_cleaned = match.strip()
-                            address = private_key_to_address(match_cleaned)
-                            if address:
-                                balance = get_balance_blockchain(address)
-                                if balance > 0:
-                                    logging.info(f"    -> Address {address} has a balance: {balance} satoshis")
-                                else:
-                                    logging.info(f"    -> Address {address} has no balance.")
-                            else:
-                                logging.debug(f"Invalid private key found: {match_cleaned}")
-    except (FileNotFoundError, PermissionError) as e:
-        logging.error(f"Error opening file {file_path}: {e}")
-    except Exception as e:
-        logging.error(f"Error reading file {file_path}: {e}")
-
-def scan_directory(directory):
-    """Recursively scans all files in a directory, skipping specific file types."""
+async def scan_directory(directory):
+    """Recursively scan files asynchronously with a concurrency limit."""
+    tasks = []
     for root, _, files in os.walk(directory):
         for file in files:
-            if any(file.lower().endswith(ext) for ext in EXCLUDED_EXTENSIONS):
-                continue  # Skip excluded file types
-
-            scan_file(os.path.join(root, file))
+            if not any(file.lower().endswith(ext) for ext in EXCLUDED_EXTENSIONS):
+                file_path = os.path.join(root, file)
+                tasks.append(scan_file(file_path))
+    await asyncio.gather(*tasks)
 
 # Set the target directory to scan
-TARGET_DIR = "C:/"
+TARGET_DIR = input("Enter the directory to scan (e.g., C:/Users/YourName/Documents): ").strip()
+if not os.path.exists(TARGET_DIR):
+    logging.error("Invalid directory. Exiting.")
+    exit(1)
 
 if __name__ == "__main__":
     logging.info(f"Scanning directory: {TARGET_DIR}...\n")
-    scan_directory(TARGET_DIR)
-    logging.info("\n[✔] Scan complete.")
+    asyncio.run(scan_directory(TARGET_DIR))
+    save_processed_addresses()  # Save addresses after scan
+    logging.info("Scan complete.")
