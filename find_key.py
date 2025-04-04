@@ -1,3 +1,4 @@
+import argparse
 import os
 import time
 import requests
@@ -99,10 +100,10 @@ def get_balance_btc_explorer(address):
 def bip32_private_key_to_address(xprv):
     """Convert a BIP-32 xprv to a Bitcoin address."""
     try:
-        wallet = Wallet.create("temp_wallet", keys=xprv, network='bitcoin')
+        wallet = Wallet.create("temp_wallet", keys=xprv, network='bitcoin', db_uri=':memory:')
         return wallet.get_key().address
     except Exception as e:
-        logging.error(f"Error converting xprv to address: {e}")
+        logging.debug(f"Error converting xprv to address: {e}")
         return None
 
 def private_key_to_address(private_key):
@@ -114,32 +115,42 @@ def private_key_to_address(private_key):
         elif private_key.startswith(("xprv", "yprv", "zprv")):  # BIP32/44
             return bip32_private_key_to_address(private_key)
     except Exception as e:
-        logging.error(f"Error converting private key to address: {e}")
+        logging.debug(f"Error converting private key to address: {e}")
     return None
+
+def extract_keys(chunk):
+    for key_type, pattern in PATTERNS.items():
+        yield from pattern.findall(chunk)
 
 async def scan_file(file_path):
     """Scan a file asynchronously with concurrency limit."""
+    found_lines = []
     async with sem:
         async for chunk in read_file_async(file_path):
-            for key_type, pattern in PATTERNS.items():
-                matches = pattern.findall(chunk)
-                for match in matches:
-                    match_cleaned = match.strip()
-                    address = private_key_to_address(match_cleaned)
+            for match in extract_keys(chunk):
+                match_cleaned = match.strip()
+                address = private_key_to_address(match_cleaned)
 
-                    # Process the address if it hasn't been processed already
-                    if address and address not in processed_addresses:
-                        balance = get_balance_btc_explorer(address)
-                        processed_addresses[address] = {
-                            "private_key": match_cleaned,  # Store the private key
-                            "balance": balance  # Store the balance
-                        }
+                # Process the address if it hasn't been processed already
+                if address and address not in processed_addresses:
+                    balance = get_balance_btc_explorer(address)
+                    processed_addresses[address] = {
+                        "private_key": match_cleaned,  # Store the private key
+                        "balance": balance  # Store the balance
+                    }
 
-                        if balance > 0:
-                            logging.info(f"Bitcoin address {address} has {balance} BTC!")
+                    if balance > 0:
+                        logging.info(f"🎯 FOUND BTC! Address: {address} - Balance: {balance} BTC")
+                        with open("found.log", "a") as found:
+                            found.write(f"{address} : {balance} BTC : {match_cleaned}\n")
+                        found_lines.append(f"{address} : {balance} BTC : {match_cleaned}\n")
 
-                        if len(processed_addresses) % SAVE_INTERVAL == 0:
-                            save_processed_addresses()
+                    if len(processed_addresses) % SAVE_INTERVAL == 0:
+                        save_processed_addresses()
+
+            if found_lines:
+                with open("found.log", "a") as found:
+                    found.writelines(found_lines)
 
 async def scan_directory(directory):
     """Recursively scan files asynchronously with a concurrency limit."""
@@ -151,21 +162,18 @@ async def scan_directory(directory):
                 tasks.append(scan_file(file_path))
     await asyncio.gather(*tasks)
 
-# Ask the user for a directory path
-TARGET_DIR = input("Enter the directory to scan (press Enter for current directory): ").strip()
-
-# Default to the current directory if no input is given
-if not TARGET_DIR:
-    TARGET_DIR = os.getcwd()
-
-# Validate the path
-if not os.path.exists(TARGET_DIR):
-    logging.error("Invalid directory. Exiting.")
-    exit(1)
-
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("directory", nargs="?", default=os.getcwd(), help="Directory to scan")
+    args = parser.parse_args()
+    TARGET_DIR = args.directory
+
+    if not os.path.exists(TARGET_DIR):
+        logging.error("Invalid directory. Exiting.")
+        exit(1)
+
     logging.info(f"Scanning directory: {TARGET_DIR}...\n")
     asyncio.run(scan_directory(TARGET_DIR))
-    save_processed_addresses()  # Save addresses after scan
+    save_processed_addresses()
     logging.info("Scan complete.")
